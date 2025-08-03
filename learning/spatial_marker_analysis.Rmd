@@ -1,0 +1,210 @@
+
+---
+title: "Spatial Transcriptomics Data Analysis"
+author: "Xufei Teng"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    theme: readable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Load required packages
+
+```{r}
+library(Seurat)
+library(dplyr)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(patchwork)
+library(openxlsx)
+library(RColorBrewer)
+library(viridis)
+```
+
+# Load data
+
+```{r}
+sce <- readRDS("combined_sketch.rds")
+```
+
+# Define cluster groups and map
+
+```{r}
+cluster_groups <- list(`1` = 0,`2` = 2,`3` = c(1,9,14),`4` = 4,`5` = 5,`6` = 6,
+                       `7` = 7,`8` = 8,`9` = 9,`10` = 10,`11` = 11,`12` = 12,
+                       `13` = 13,`14` = 15,`15` = 16,`16` = 17,`17` = 19,`18` = 20,
+                       `19` = 21,`20` = 22,`21` = 23,`22` = 24,`23` = 25,`24` = 26,
+                       `25` = 27,`26` = 28)
+
+cluster_to_group <- unlist(lapply(names(cluster_groups), function(g) {
+  setNames(rep(as.numeric(g), length(cluster_groups[[g]])), cluster_groups[[g]])
+}))
+
+sce$grouped_cluster <- as.numeric(cluster_to_group[as.character(sce$seurat_cluster.projected)])
+```
+
+# Marker gene analysis
+
+```{r}
+markers <- FindAllMarkers(sce, only.pos = TRUE, group.by="grouped_cluster")
+top_genes <- markers %>% 
+  group_by(cluster) %>% 
+  filter(pct.1 > 0.3 & pct.1 - pct.2 > 0.1 & avg_log2FC > 0.5) %>% 
+  arrange(desc(avg_log2FC)) %>% 
+  slice_head(n = 50) %>% 
+  arrange(p_val_adj) %>% 
+  slice_head(n = 30) %>% 
+  as.data.frame()
+```
+
+# Save markers to Excel
+
+```{r}
+wb <- createWorkbook()
+addWorksheet(wb, "marker")
+addWorksheet(wb, "detailed_information")
+writeData(wb, sheet = "marker", top_genes %>% group_by(cluster) %>% summarise(genes = paste(gene, collapse = ", ")))
+writeData(wb, sheet = "detailed_information", top_genes[order(top_genes$cluster),])
+saveWorkbook(wb, "AB_spatial_marker_topgene_combine_some_groups.xlsx", overwrite = TRUE)
+```
+
+# Heatmap of expression
+
+```{r}
+avg <- AverageExpression(sce)
+colnames(avg$sketch) <- gsub("g","",colnames(avg$sketch))
+
+pdf("spatial_marker_expression_heatmap.pdf",width=7.5,height=11)
+pheatmap::pheatmap(
+  avg$sketch[unique(top_genes$gene)[!grepl("MT-", unique(top_genes$gene))],],
+  scale = "row", cluster_rows = TRUE, cluster_cols = TRUE,
+  show_rownames = TRUE, show_colnames = TRUE,
+  color = colorRampPalette(rev(brewer.pal(11, "RdBu")))(100),
+  clustering_method="ward.D2", fontsize_row = 6, fontsize_col = 9, angle_col = 45)
+dev.off()
+```
+
+# Sample-wise Distribution Barplot
+
+```{r}
+sce$sample_id <- unlist(lapply(rownames(sce@meta.data), function(x) {
+  unlist(strsplit(x, "_")[[1]])[1]
+}))
+mat <- sce@meta.data[, c("sample_id", "seurat_cluster.projected")]
+df_counts <- as.data.frame(table(Cluster = mat$seurat_cluster.projected, Sample = mat$sample_id))
+
+p <- ggplot(df_counts, aes(x = as.factor(Cluster), y = Freq, fill = Sample)) + 
+  geom_bar(stat = "identity", width = 0.7) +
+  scale_fill_manual(values = c("#F1BA88", "#03A791")) +
+  theme_minimal(base_size = 14) + labs(x = "Seurat projected clusters",
+                                       y = "Number of Bins", fill = "Sample ID") +
+  theme(axis.text.x = element_text(color = "black"), panel.grid.major.x = element_blank())
+ggsave("combined_number_of_bins_across_clusters.pdf", p, width = 11, height = 6.5)
+```
+
+# Spatial DimPlot per Sample
+
+```{r}
+Idents(sce) <- as.factor(sce$grouped_cluster)
+cells <- CellsByIdentities(sce)
+cells_filtered1 <- lapply(cells, function(c) c[sce$sample_id[c] == "15S21559"]); cells_filtered1 <- cells_filtered1[lengths(cells_filtered1) > 0]
+cells_filtered2 <- lapply(cells, function(c) c[sce$sample_id[c] == "24S11795"]); cells_filtered2 <- cells_filtered2[lengths(cells_filtered2) > 0]
+p3 <- SpatialDimPlot(sce, cells.highlight = cells_filtered1, cols.highlight = c("black", "white"),
+                     facet.highlight = TRUE, combine = TRUE, images = "X15S21559.008um", alpha = 1) + NoLegend()
+p4 <- SpatialDimPlot(sce, cells.highlight = cells_filtered2, cols.highlight = c("black", "white"),
+                     facet.highlight = TRUE, combine = TRUE, images = "X24S11795.008um", alpha = 1) + NoLegend()
+ggsave("combined_SpatialDimPlot_of_each_cluster_15S21559.png", p3, width = 20, height = 15)
+ggsave("combined_SpatialDimPlot_of_each_cluster_24S11795.png", p4, width = 20, height = 15)
+```
+
+# Enhanced Spatial Feature Plot Function
+
+```{r}
+DefaultAssay(sce) <- "Spatial.008um"
+mat <- as.matrix(GetAssayData(sce, slot = "data"))
+mat[mat == 0] <- NA
+sce@assays$Spatial.008um@layers$data <- mat
+
+create_enhanced_spatial_plot <- function(seurat_obj, gene, image_name, output_dir = ".", max = 7.5) {
+  expression_data <- GetAssayData(seurat_obj, assay = "Spatial.008um", slot = "data")[gene, ]
+  max_expr <- max(expression_data, na.rm = TRUE)
+  if (max_expr <= 0.001) {
+    plot <- SpatialFeaturePlot(seurat_obj, features = gene, images = image_name,
+                                image.alpha = 0.2, pt.size.factor = 2.5) +
+      scale_fill_gradient(low = "lightgray", high = "lightgray", na.value = NA, name = "Expression") +
+      ggtitle(paste0(gene, " - No Expression Detected")) + theme_minimal()
+  } else {
+    plot <- SpatialFeaturePlot(seurat_obj, features = gene, images = image_name,
+                                image.alpha = 0.2, pt.size.factor = 2.5, stroke = 0) +
+      scale_fill_viridis_c(option = "plasma", na.value = NA, name = "Expression",
+                           trans = "sqrt", limits = c(0, max),
+                           breaks = scales::pretty_breaks(n = 5)) +
+      ggtitle(gene) + theme_minimal()
+  }
+  plot$layers[[1]]$aes_params$colour <- NA
+  return(plot)
+}
+
+genes <- c("VIM", "PAX6", "HES5", "SLC1A3", "FABP7", "SOX2", "CDH2", "TNR")
+for (gene in intersect(genes, rownames(sce))) {
+  p1 <- create_enhanced_spatial_plot(sce, gene, "X15S21559.008um")
+  p2 <- create_enhanced_spatial_plot(sce, gene, "X24S11795.008um")
+  ggsave(paste0(gene, "_enhanced_spatial.pdf"), p1 | p2, width = 12, height = 7.5, dpi = 1000)
+}
+```
+
+# Gene Combo Clustering visualization
+
+```{r}
+genes <- c("GFAP", "CD163", "COL3A1")
+assign_expression_cluster <- function(seurat_obj, genes, threshold = 0.1) {
+  expr_data <- GetAssayData(seurat_obj, assay = "Spatial.008um", slot = "data")[genes, , drop = FALSE]
+  expr_data[is.na(expr_data)] <- 0
+  binary_expr <- expr_data > threshold
+  expr_labels <- apply(binary_expr, 2, function(x) {
+    expressed_genes <- genes[which(x)]
+    if (length(expressed_genes) == 0) {
+      return("None")
+    } else {
+      return(paste(expressed_genes, collapse = "+"))
+    }
+  })
+  seurat_obj$GeneCombo <- factor(expr_labels, levels = unique(expr_labels))
+  return(seurat_obj)
+}
+sce <- assign_expression_cluster(sce, genes)
+custom_colors <- c("None" = "gray90","GFAP" = "#E41A1C","CD163" = "#377EB8","COL3A1" = "#4DAF4A",
+                   "GFAP+CD163" = "#984EA3","GFAP+COL3A1" = "#FF7F00",
+                   "CD163+COL3A1" = "#00CED1","GFAP+CD163+COL3A1" = "#FFD92F")
+p1 <- SpatialDimPlot(sce, group.by = "GeneCombo", images = "X15S21559.008um", pt.size.factor = 2.5, cols = custom_colors,image.alpha=0) + ggtitle("X15S21559") + theme(legend.position = "right")
+p2 <- SpatialDimPlot(sce, group.by = "GeneCombo", images = "X24S11795.008um", pt.size.factor = 2.5, cols = custom_colors,image.alpha=0) + ggtitle("X24S11795") + theme(legend.position = "right")
+ggsave("GeneCombo_spatial_clusters.png", p1 | p2, width = 11, height = 6, dpi = 1600)
+ggsave("GeneCombo_spatial_clusters.pdf", p1 | p2, width = 11, height = 6)
+```
+
+# Function documentation
+
+## `FindAllMarkers()`
+Identifies marker genes for each cluster using differential expression testing.
+
+## `AverageExpression()`
+Calculates average expression for each gene within each identity group.
+
+## `SpatialDimPlot()`
+Generates spatial plots of clusters or gene expression for Visium or HD data.
+
+## `SpatialFeaturePlot()`
+Visualizes expression of specific genes in spatial coordinates.
+
+## `pheatmap::pheatmap()`
+Draws heatmaps of gene expression with hierarchical clustering.
+
+---

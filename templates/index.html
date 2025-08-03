@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bioinformatics AI Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <style>
+        :root {
+            --primary: #165DFF;
+            --primary-light: #E8F3FF;
+            --primary-dark: #0E42D2;
+            --secondary: #36CFC9;
+            --accent: #722ED1;
+            --success: #52C41A;
+            --warning: #FAAD14;
+            --danger: #FF4D4F;
+            --dark: #1D2129;
+            --dark-2: #4E5969;
+            --gray: #86909C;
+            --light-1: #F2F3F5;
+            --light-2: #E5E6EB;
+            --light-3: #C9CDD4;
+            --white: #FFFFFF;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-full: 999px;
+            --transition: all 0.25s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F7F8FA;
+            color: var(--dark);
+            line-height: 1.5;
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 1600px;
+            margin: 0 auto;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            border-radius: var(--radius-lg);
+        }
+
+        /* Header */
+        .app-header {
+            background-color: var(--white);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--light-2);
+            z-index: 10;
+        }
+
+        .app-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background-color: var(--primary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 18px;
+        }
+
+        .app-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .app-subtitle {
+            font-size: 0.875rem;
+            color: var(--gray);
+            margin-top: -4px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Chat Panel */
+        .chat-panel {
+            flex: 0 0 40%; /* Chat panel takes 40% of the width */
+            min-width: 360px; /* Keep minimum width */
+            display: flex;
+            flex-direction: column;
+            background-color: var(--white);
+            border-right: 1px solid var(--light-2);
+            overflow: hidden;
+        }
+
+        .chat-history {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            background-color: #FCFCFD;
+            background-image:
+                radial-gradient(circle at 1px 1px, var(--light-2) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+
+        .message {
+            margin-bottom: 24px;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.bot {
+            margin-right: auto;
+        }
+
+        .message.user {
+            margin-left: auto;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .bot .message-avatar {
+            background-color: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .user .message-avatar {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        .message-sender {
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--gray);
+            margin-left: auto;
+        }
+
+        .message-content {
+            padding: 14px 18px;
+            border-radius: var(--radius-lg);
+            line-height: 1.6;
+            position: relative;
+        }
+
+        .bot .message-content {
+            background-color: var(--white);
+            border: 1px solid var(--light-2);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .user .message-content {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        .message-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            justify-content: flex-end;
+            padding-right: 8px;
+        }
+
+        .message-action {
+            color: var(--gray);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .message-action:hover {
+            color: var(--primary);
+        }
+
+        /* Input Area */
+        .input-container {
+            padding: 16px 24px;
+            border-top: 1px solid var(--light-2);
+            background-color: var(--white);
+        }
+
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .suggestion-tag {
+            background-color: var(--light-1);
+            border: 1px solid var(--light-2);
+            border-radius: var(--radius-full);
+            padding: 6px 16px;
+            font-size: 0.875rem;
+            color: var(--dark-2);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .suggestion-tag:hover {
+            background-color: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .chat-input {
+            width: 100%;
+            min-height: 56px;
+            max-height: 200px;
+            padding: 16px 20px;
+            padding-right: 72px;
+            border: 1px solid var(--light-2);
+            border-radius: var(--radius-lg);
+            font-family: inherit;
+            font-size: 0.9375rem;
+            resize: none;
+            transition: var(--transition);
+            line-height: 1.5;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.1);
+        }
+
+        .chat-input::placeholder {
+            color: var(--gray);
+        }
+
+        .send-button {
+            position: absolute;
+            right: 12px;
+            bottom: 12px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: var(--white);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .send-button:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .send-button:disabled {
+            background-color: var(--light-2);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Results Panel */
+        .results-panel {
+            flex: 1; /* Results panel takes the remaining space */
+            display: flex;
+            flex-direction: column;
+            background-color: var(--white);
+            overflow: hidden;
+        }
+
+        .panel-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--light-2);
+        }
+
+        .panel-tab {
+            flex: 1;
+            padding: 16px 24px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 0.9375rem;
+            color: var(--dark-2);
+            cursor: pointer;
+            transition: var(--transition);
+            border-bottom: 2px solid transparent;
+        }
+
+        .panel-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .panel-tab:hover:not(.active) {
+            color: var(--primary);
+            background-color: var(--light-1);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .tab-pane {
+            display: none;
+            padding: 24px;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .panel-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title i {
+            color: var(--primary);
+        }
+
+        /* Analysis Results */
+        .results-container {
+            background-color: #FAFAFA;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--light-2);
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .results-header {
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--light-2);
+        }
+
+        .results-subtitle {
+            font-size: 0.875rem;
+            color: var(--gray);
+            margin-top: 4px;
+        }
+
+        .results-section {
+            margin-bottom: 20px;
+        }
+
+        .results-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--dark);
+        }
+
+        .results-data {
+            font-size: 0.9375rem;
+        }
+
+        .data-row {
+            display: flex;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--light-2);
+        }
+
+        .data-row:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            flex: 1;
+            color: var(--dark-2);
+        }
+
+        .data-value {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        /* Processing Logs - Fixed styles */
+        #logs-tab {
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #logs-tab .panel-title {
+            padding: 24px 24px 0;
+        }
+
+        .log-container {
+            background-color: #1D1E20;
+            border-radius: 0 0 var(--radius-md) var(--radius-md);
+            color: #C5C8C6;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+            padding: 24px;
+            flex: 1;
+            box-sizing: border-box;
+            line-height: 1.6;
+            overflow-y: auto;
+            margin: 0 24px 24px;
+        }
+
+        .log-line {
+            margin-bottom: 4px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .log-time {
+            color: #969896;
+            margin-right: 8px;
+        }
+
+        .log-info {
+            color: #81A2BE;
+        }
+
+        .log-success {
+            color: #B5BD68;
+        }
+
+        .log-warning {
+            color: #F0C674;
+        }
+
+        .log-error {
+            color: #CC6666;
+        }
+
+        .log-code {
+            color: #B294BB;
+            padding-left: 24px;
+            margin: 8px 0;
+        }
+
+        /* Status Panel */
+        .status-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .status-item {
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            background-color: var(--light-1);
+            transition: var(--transition);
+        }
+
+        .status-item.active {
+            background-color: var(--primary-light);
+            border: 1px solid var(--primary);
+        }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .status-pending .status-icon {
+            background-color: var(--light-3);
+            color: var(--white);
+        }
+
+        .status-processing .status-icon {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        .status-completed .status-icon {
+            background-color: var(--success);
+            color: var(--white);
+        }
+
+        .status-failed .status-icon {
+            background-color: var(--danger);
+            color: var(--white);
+        }
+
+        .status-title {
+            font-weight: 600;
+            font-size: 0.9375rem;
+        }
+
+        .status-time {
+            font-size: 0.75rem;
+            color: var(--gray);
+            margin-left: auto;
+        }
+
+        .status-message {
+            margin-top: 8px;
+            font-size: 0.875rem;
+            color: var(--dark-2);
+            padding-left: 36px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--light-3);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gray);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .results-panel {
+                width: 100%;
+                min-width: auto;
+                height: 50%;
+                border-top: 1px solid var(--light-2);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                border-radius: 0;
+                height: 100vh;
+            }
+
+            .app-header {
+                padding: 12px 16px;
+            }
+
+            .app-title {
+                font-size: 1rem;
+            }
+
+            .chat-history {
+                padding: 16px;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            .input-container {
+                padding: 12px 16px;
+            }
+
+            .suggestions {
+                gap: 8px;
+            }
+
+            .suggestion-tag {
+                padding: 4px 12px;
+                font-size: 0.8125rem;
+            }
+
+            .tab-pane {
+                padding: 16px;
+            }
+
+            .log-container {
+                margin: 0 16px 16px;
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="app-logo">
+                <div class="logo-icon">
+                    <i class="fas fa-dna"></i>
+                </div>
+                <div>
+                    <div class="app-title">Bioinformatics AI Assistant</div>
+                    <div class="app-subtitle">Advanced sequence analysis & interpretation</div>
+                </div>
+            </div>
+            <div class="user-profile">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Chat Panel -->
+            <div class="chat-panel">
+                <div class="chat-history" id="chatHistory">
+                    <div class="message bot">
+                        <div class="message-header">
+                            <div class="message-avatar">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="message-sender">Bioinformatics AI</div>
+                            <div class="message-time">Just now</div>
+                        </div>
+                        <div class="message-content">
+                            Hello! I'm your professional Bioinformatics AI Assistant. I can help with sequence analysis, protein structure prediction, pathway analysis, and more. How can I assist you today?
+                        </div>
+                        <div class="message-actions">
+                            <div class="message-action"><i class="far fa-thumbs-up"></i> Helpful</div>
+                            <div class="message-action"><i class="far fa-copy"></i> Copy</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-container">
+                    <div class="suggestions" id="suggestions">
+                        <!-- Suggestions will be added dynamically -->
+                    </div>
+                    <div class="input-wrapper">
+                        <textarea class="chat-input" id="chatInput" placeholder="Ask me about bioinformatics... For example: Analyze this DNA sequence: ATGCATGC, predict possible protein structures, or explain gene expression analysis..."></textarea>
+                        <button class="send-button" id="sendButton">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="results-panel">
+                <div class="panel-tabs">
+                    <div class="panel-tab active" data-tab="results">Results</div>
+                    <div class="panel-tab" data-tab="logs">Logs</div>
+                    <div class="panel-tab" data-tab="status">Status</div>
+                </div>
+                <div class="panel-content">
+                    <!-- Results Tab -->
+                    <div class="tab-pane active" id="results-tab">
+                        <h3 class="panel-title"><i class="fas fa-chart-line"></i> Analysis Results</h3>
+                        <div class="results-container" id="reportContent">
+                            <div class="results-header">
+                                <h4>Sequence Analysis Report</h4>
+                                <div class="results-subtitle">Waiting for your query to generate analysis...</div>
+                            </div>
+                            <div class="results-section">
+                                <p class="text-muted">Please submit a query to begin analysis. The results will appear here once processing is complete.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Logs Tab -->
+                    <div class="tab-pane" id="logs-tab">
+                        <h3 class="panel-title"><i class="fas fa-code"></i> Processing Logs</h3>
+                        <div class="log-container" id="logContainer">
+                            <div class="log-line"><span class="log-time">[00:00:00]</span> <span class="log-info">System ready. Waiting for input...</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Status Tab -->
+                    <div class="tab-pane" id="status-tab">
+                        <h3 class="panel-title"><i class="fas fa-tasks"></i> Processing Status</h3>
+                        <div class="status-list" id="statusList">
+                            <!-- Status items will be generated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const chatInput = document.getElementById('chatInput');
+        const sendButton = document.getElementById('sendButton');
+        const chatHistory = document.getElementById('chatHistory');
+        const suggestionsContainer = document.getElementById('suggestions');
+        const logContainer = document.getElementById('logContainer');
+        const reportContent = document.getElementById('reportContent');
+        const statusList = document.getElementById('statusList');
+        const panelTabs = document.querySelectorAll('.panel-tab');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+
+        const stageIcons = {
+            "default": "fas fa-cogs",
+            "Running run_bioinformatics_agent": "fas fa-dna",
+            "Running find_therapeutic_targets": "fas fa-bullseye",
+            "Running run_critic_agent": "fas fa-comment-alt",
+            "Running run_expert_agent": "fas fa-user-md",
+            "Processing Complete": "fas fa-check-circle"
+        };
+
+        // Sample suggestions
+        const suggestions = [
+            "Analyze this DNA sequence: ATGCGATCGATCGATCG",
+            "Predict protein structure from this sequence: MAAHKGAEHHHKAAEHHEQAAKHHHAAAEHHEKGEHEQAAHHADTAYAHHKHAEEHAAQAAKHDAEHHAPKPH",
+            "Explain how BLAST works for sequence alignment",
+            "What are the common methods for gene expression analysis?",
+            "How to identify SNPs in a genome sequence?"
+        ];
+
+        // Initialize suggestions
+        function initSuggestions() {
+            suggestions.forEach(text => {
+                const tag = document.createElement('div');
+                tag.className = 'suggestion-tag';
+                tag.textContent = text;
+                tag.addEventListener('click', () => {
+                    chatInput.value = text;
+                    adjustInputHeight();
+                    chatInput.focus();
+                });
+                suggestionsContainer.appendChild(tag);
+            });
+        }
+
+        // Adjust input height based on content
+        function adjustInputHeight() {
+            chatInput.style.height = 'auto';
+            const newHeight = Math.min(chatInput.scrollHeight, 200);
+            chatInput.style.height = `${newHeight}px`;
+        }
+
+        // Add message to chat history
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            const avatarContent = isUser ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+            const senderName = isUser ? 'You' : 'Bioinformatics AI';
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-avatar">${avatarContent}</div>
+                    <div class="message-sender">${senderName}</div>
+                    <div class="message-time">${timeString}</div>
+                </div>
+                <div class="message-content">${marked.parse(content)}</div>
+                <div class="message-actions">
+                    <div class="message-action"><i class="far fa-copy"></i> Copy</div>
+                </div>
+            `;
+            
+            chatHistory.appendChild(messageDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+            
+            const copyBtn = messageDiv.querySelector('.message-action');
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(content).then(() => {
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="far fa-check"></i> Copied';
+                    setTimeout(() => { copyBtn.innerHTML = originalText; }, 2000);
+                });
+            });
+        }
+
+        function animateThoughtProcess(thoughtText) {
+            const lines = thoughtText.split('\n');
+            let lineIndex = 0;
+
+            function typeLine() {
+                if (lineIndex < lines.length) {
+                    const line = lines[lineIndex];
+                    addLog(line, 'info');
+                    lineIndex++;
+                    setTimeout(typeLine, 300); // Adjust delay for typing speed
+                }
+            }
+
+            typeLine();
+        }
+
+        // Add log entry
+        function addLog(message, type = 'info') {
+            const now = new Date();
+            const timeString = now.toTimeString().slice(0, 8);
+            
+            const logLine = document.createElement('div');
+            logLine.className = 'log-line';
+            
+            const sanitizedMessage = message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            
+            logLine.innerHTML = `<span class="log-time">[${timeString}]</span> <span class="log-${type}">${sanitizedMessage}</span>`;
+            
+            logContainer.appendChild(logLine);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Update or create a status item
+        function updateStatus(stage, status, message) {
+            const stageId = `status-${stage.replace(/\s+/g, '-')}`;
+            let statusItem = document.getElementById(stageId);
+
+            if (!statusItem) {
+                statusItem = document.createElement('div');
+                statusItem.id = stageId;
+                statusItem.className = 'status-item';
+                
+                const iconClass = stageIcons[stage] || stageIcons['default'];
+
+                statusItem.innerHTML = `
+                    <div class="status-header">
+                        <div class="status-icon">
+                            <i class="${iconClass}"></i>
+                        </div>
+                        <div class="status-title">${stage}</div>
+                        <div class="status-time">--:--</div>
+                    </div>
+                    <div class="status-message"></div>
+                `;
+                statusList.appendChild(statusItem);
+            }
+
+            // Remove all status classes and add the current one
+            statusItem.classList.remove('status-pending', 'status-processing', 'status-completed', 'status-failed');
+            statusItem.classList.add(`status-${status}`);
+            
+            // Highlight active stage
+            document.querySelectorAll('.status-item').forEach(item => item.classList.remove('active'));
+            if (status === 'processing') {
+                statusItem.classList.add('active');
+            }
+
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            statusItem.querySelector('.status-time').textContent = timeString;
+            statusItem.querySelector('.status-message').textContent = message;
+        }
+
+        // Switch tabs
+        function setupTabs() {
+            const panelContent = document.querySelector('.panel-content');
+
+            panelTabs.forEach(tab => {
+                tab.addEventListener('click', (event) => {
+                    const tabId = event.currentTarget.getAttribute('data-tab');
+                    
+                    // Deactivate all tabs
+                    panelTabs.forEach(t => t.classList.remove('active'));
+                    
+                    // Hide all tab panes
+                    tabPanes.forEach(pane => {
+                        pane.classList.remove('active');
+                        pane.style.display = 'none'; // Force hide
+                    });
+
+                    // Activate the clicked tab
+                    event.currentTarget.classList.add('active');
+
+                    // Show the correct tab pane
+                    const activePane = document.getElementById(`${tabId}-tab`);
+                    activePane.classList.add('active');
+                    
+                    // The logs tab has a special display style
+                    if (tabId === 'logs') {
+                        activePane.style.display = 'flex';
+                    } else {
+                        activePane.style.display = 'block';
+                    }
+
+                    // Reset scroll position of the container
+                    if (panelContent) {
+                        panelContent.scrollTop = 0;
+                    }
+                });
+            });
+        }
+
+        // Event Listeners
+        chatInput.addEventListener('input', adjustInputHeight);
+        
+        sendButton.addEventListener('click', () => {
+            const query = chatInput.value.trim();
+            if (!query) return;
+            
+            addMessage(query, true);
+            chatInput.value = '';
+            adjustInputHeight();
+            
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div>';
+            
+            // Reset UI for new query
+            logContainer.innerHTML = '';
+            statusList.innerHTML = '';
+            reportContent.innerHTML = `
+                <div class="results-header">
+                    <h4>Processing Query...</h4>
+                    <div class="results-subtitle">Please wait while we analyze your request.</div>
+                </div>
+                <div class="results-section">
+                    <div class="d-flex justify-content-center p-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Processing...</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            updateStatus('Input Received', 'completed', 'Query received and validated');
+            addLog('Starting analysis process', 'info');
+
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-avatar"><i class="fas fa-robot"></i></div>
+                    <div class="message-sender">Bioinformatics AI</div>
+                    <div class="message-time">Now</div>
+                </div>
+                <div class="message-content">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div> Analyzing...
+                </div>
+            `;
+            chatHistory.appendChild(typingDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            const eventSource = new EventSource(`/run_task?task=${encodeURIComponent(query)}`);
+
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log("Received data:", data); // Debugging line
+
+                    if (data.type === 'close') {
+                        addLog("Server has closed the connection.", "info");
+                        eventSource.close();
+                        sendButton.disabled = false;
+                        sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                        const typingIndicator = document.getElementById('typingIndicator');
+                        if (typingIndicator) typingIndicator.remove();
+                        return;
+                    }
+
+                    if (data.type === 'log') {
+                        addLog(data.content);
+                    } else if (data.type === 'report') {
+                        reportContent.innerHTML = `
+                            <div class="results-header">
+                                <h4>Final Analysis Report</h4>
+                                <div class="results-subtitle">Generated on ${new Date().toLocaleDateString()}</div>
+                            </div>
+                            <div class="results-section">${marked.parse(data.content)}</div>
+                        `;
+                    } else if (data.type === 'chat_message') {
+                        const typingIndicator = document.getElementById('typingIndicator');
+                        if (typingIndicator) typingIndicator.remove();
+                        addMessage(data.content, false);
+                    } else if (data.type === 'status') {
+                        updateStatus(data.stage, data.status, data.message);
+                    }
+
+                } catch (e) {
+                    console.error("Failed to process SSE message:", event.data, e);
+                    addLog("Received a malformed message from the server.", "error");
+                }
+            };
+
+            eventSource.onerror = function(err) {
+                addLog("EventSource connection error.", 'error');
+                updateStatus('Error', 'failed', 'Connection to the server failed.');
+                eventSource.close();
+                sendButton.disabled = false;
+                sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                const typingIndicator = document.getElementById('typingIndicator');
+                if (typingIndicator) typingIndicator.remove();
+                addMessage("An error occurred during analysis. Please check the Logs tab.");
+            };
+        });
+
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendButton.click();
+            }
+        });
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            initSuggestions();
+            setupTabs();
+            adjustInputHeight();
+            addLog('System ready. Waiting for input...', 'info');
+            hljs.highlightAll();
+        });
+    </script>
+</body>
+</html>

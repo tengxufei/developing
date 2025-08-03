@@ -1,0 +1,12 @@
+--- TCGA Detailed Co-expression Report ---
+TCGA Project: TCGA-GBM
+Genes Analyzed: DLL3, SEZ6, CD276
+---
+DLL3                          : 100.00% (372/372 tumors)
+SEZ6                          : 100.00% (372/372 tumors)
+CD276                         : 100.00% (372/372 tumors)
+DLL3 + SEZ6                   : 100.00% (372/372 tumors)
+DLL3 + CD276                  : 100.00% (372/372 tumors)
+SEZ6 + CD276                  : 100.00% (372/372 tumors)
+DLL3 + SEZ6 + CD276           : 100.00% (372/372 tumors)
+------------------------------------------

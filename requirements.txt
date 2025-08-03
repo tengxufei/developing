@@ -1,0 +1,7 @@
+langchain-aws
+langchain
+pandas
+boto3
+Flask
+gunicorn
+python-dotenv
