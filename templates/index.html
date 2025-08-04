@@ -994,7 +994,10 @@
             sendButton.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div>';
             
             // Reset UI for new query
-            logContainer.innerHTML = '';
+            // Only clear logs if it's the very first user message (initial bot message + user's first message)
+            if (chatHistory.children.length <= 1) {
+                logContainer.innerHTML = '';
+            }
             statusList.innerHTML = '';
             reportContent.innerHTML = `
                 <div class="results-header">
