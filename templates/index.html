@@ -943,13 +943,11 @@
                 tab.addEventListener('click', (event) => {
                     const tabId = event.currentTarget.getAttribute('data-tab');
                     
-                    // Deactivate all tabs
+                    // Deactivate all tabs and hide all panes
                     panelTabs.forEach(t => t.classList.remove('active'));
-                    
-                    // Hide all tab panes
                     tabPanes.forEach(pane => {
                         pane.classList.remove('active');
-                        pane.style.display = 'none'; // Force hide
+                        pane.style.display = 'none'; // Enforce hiding
                     });
 
                     // Activate the clicked tab
@@ -958,17 +956,24 @@
                     // Show the correct tab pane
                     const activePane = document.getElementById(`${tabId}-tab`);
                     activePane.classList.add('active');
-                    
-                    // The logs tab has a special display style
+                    activePane.style.display = 'block';
+
+                    // Special display for logs tab
                     if (tabId === 'logs') {
                         activePane.style.display = 'flex';
-                    } else {
-                        activePane.style.display = 'block';
                     }
 
-                    // Reset scroll position of the container
+                    // Reset scroll position of the container to the top
                     if (panelContent) {
                         panelContent.scrollTop = 0;
+                    }
+
+                    // If switching to status, ensure it's clean
+                    if (tabId === 'status') {
+                        // Optional: show a loading indicator if data fetching is slow
+                        if (statusList.innerHTML === '') {
+                            statusList.innerHTML = '<div class="d-flex justify-content-center p-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+                        }
                     }
                 });
             });
